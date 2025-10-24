@@ -117,14 +117,22 @@ if uploaded_pdf:
             df_results, out_xlsx = None, None
             try:
                 df_results, out_xlsx = run_pipeline(tmp_pdf_path)
+                # Ergebnisse in Session State speichern
+                st.session_state['df_results'] = df_results
+                st.session_state['out_xlsx'] = out_xlsx
+                st.session_state['uploaded_filename'] = uploaded_pdf.name
             except Exception as e:
                 st.error(f"❌ Fehler bei der Analyse: {e}")
                 st.exception(e)
                 st.stop()
 
-        # ----------------------------
-        # Ergebnisse anzeigen
-        # ----------------------------
+    # ----------------------------
+    # Ergebnisse anzeigen (aus Session State)
+    # ----------------------------
+    if 'df_results' in st.session_state and st.session_state['df_results'] is not None:
+        df_results = st.session_state['df_results']
+        out_xlsx = st.session_state['out_xlsx']
+        
         if df_results is not None and not df_results.empty:
             st.success("✅ **Analyse erfolgreich abgeschlossen!**")
             
@@ -225,30 +233,37 @@ if uploaded_pdf:
             with col1:
                 selected_categories = st.multiselect(
                     "Filter nach Kategorie",
-                    options=df_results['category'].unique(),
-                    default=df_results['category'].unique()
+                    options=sorted(df_results['category'].unique()),
+                    default=list(df_results['category'].unique()),
+                    key="category_filter"
                 )
             
             with col2:
                 selected_floors = st.multiselect(
                     "Filter nach Geschoss",
                     options=sorted(df_results['geschoss'].unique()),
-                    default=sorted(df_results['geschoss'].unique())
+                    default=list(sorted(df_results['geschoss'].unique())),
+                    key="floor_filter"
                 )
             
             with col3:
-                heat_threshold = st.slider(
-                    "Min. Heizlast [W/m²]",
-                    min_value=0.0,
-                    max_value=float(df_results['required_heat_per_m2'].max()),
-                    value=0.0
+                min_heat = float(df_results['required_heat_per_m2'].min())
+                max_heat = float(df_results['required_heat_per_m2'].max())
+                
+                heat_range = st.slider(
+                    "Heizlast-Bereich [W/m²]",
+                    min_value=min_heat,
+                    max_value=max_heat,
+                    value=(min_heat, max_heat),
+                    key="heat_range_filter"
                 )
             
             # Gefilterte Daten
             filtered_df = df_results[
                 (df_results['category'].isin(selected_categories)) &
                 (df_results['geschoss'].isin(selected_floors)) &
-                (df_results['required_heat_per_m2'] >= heat_threshold)
+                (df_results['required_heat_per_m2'] >= heat_range[0]) &
+                (df_results['required_heat_per_m2'] <= heat_range[1])
             ]
             
             # Anzeigeoptionen für Tabelle
@@ -312,7 +327,7 @@ if uploaded_pdf:
                     st.download_button(
                         label="📥 Excel-Bericht herunterladen",
                         data=xlsx_bytes,
-                        file_name=Path(uploaded_pdf.name).stem + "_validation_results.xlsx",
+                        file_name=Path(st.session_state['uploaded_filename']).stem + "_validation_results.xlsx",
                         mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
                         use_container_width=True
                     )
