@@ -192,37 +192,6 @@ if uploaded_pdf:
             st.markdown("---")
 
             # ----------------------------
-            # Heizlast-Analyse
-            # ----------------------------
-            st.markdown("### 🌡️ Heizlast-Analyse")
-            
-            col1, col2 = st.columns([1, 1])
-            
-            with col1:
-                # Box-Plot pro Kategorie
-                fig3, ax3 = plt.subplots(figsize=(10, 6))
-                df_results.boxplot(column='required_heat_per_m2', by='category', ax=ax3)
-                ax3.set_xlabel('Kategorie')
-                ax3.set_ylabel('Spezifische Heizlast [W/m²]')
-                ax3.set_title('Heizlast-Verteilung pro Kategorie')
-                plt.xticks(rotation=45, ha='right')
-                plt.suptitle('')
-                plt.tight_layout()
-                st.pyplot(fig3)
-            
-            with col2:
-                # Violin Plot
-                fig4, ax4 = plt.subplots(figsize=(10, 6))
-                sns.violinplot(data=df_results, y='category', x='required_heat_per_m2', ax=ax4)
-                ax4.set_xlabel('Spezifische Heizlast [W/m²]')
-                ax4.set_ylabel('Kategorie')
-                ax4.set_title('Heizlast-Verteilung (Violin Plot)')
-                plt.tight_layout()
-                st.pyplot(fig4)
-
-            st.markdown("---")
-
-            # ----------------------------
             # Detaillierte Tabelle
             # ----------------------------
             st.markdown("### 📋 Detaillierte Raumdaten")
